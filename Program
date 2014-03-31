@@ -1,0 +1,133 @@
+#include<stdio.h>
+const int N=1000001;
+using namespace std;
+FILE *f,*g;
+
+struct nod{
+
+    int nr, sum;
+    bool ok;
+}ai[3*N];
+
+int q;
+
+void read(void){
+
+    f=fopen("tycoon.in","r");
+    g=fopen("tycoon.out","w");
+
+    fscanf(f,"%d",&q);
+}
+
+void fix(int poz,int st, int dr, int ok){
+
+    int poz1=poz*2, poz2=poz1+1;
+    
+    if (ok){
+        ai[poz1].nr=ai[poz2].nr=0;
+        ai[poz1].ok=ai[poz2].ok=ok;
+    }
+}
+
+void updateadd(int poz, int st, int dr, int n, int c){
+    
+    if (st == dr){
+
+        ai[poz].nr+=n;
+        ai[poz].sum+=n*st;
+    }
+    else{
+
+        fix(poz,st,dr,ai[poz].ok);
+        
+        int mid=(st+dr)/2, poz1=2*poz;
+        
+        if (c <= mid) updateadd(poz1,st,mid,n,c);
+        else updateadd(poz1+1,mid+1,dr,n,c);
+        
+        ai[poz].ok=0;
+        ai[poz].nr=ai[poz1].nr+ai[poz1+1].nr;
+        ai[poz].sum=ai[poz1].sum+ai[poz1+1].sum;
+    }
+}
+
+int findsum(int poz, int st, int dr, int n){
+    
+    if (ai[poz].nr == n || st == dr){
+
+        if (ai[poz].nr == n) return ai[poz].sum;
+        else return n*st;
+    }
+    else{
+
+        fix(poz,st,dr,ai[poz].ok);
+        
+        ai[poz].ok=0;
+        
+        int poz1=poz*2;
+        
+        if (ai[poz1].nr >= n) return findsum(poz1,st, (st+dr)/2,n);
+        else return (findsum(poz1,st,(st+dr)/2,ai[poz1].nr)+findsum(poz1+1,(st+dr)/2+1,dr,n-ai[poz1].nr));
+    }
+}
+
+void eliminate(int poz, int st, int dr, int n){
+
+    if (ai[poz].nr == n || st == dr){
+
+        if (ai[poz].nr == n){
+            ai[poz].nr=0;
+            ai[poz].sum=0;
+            ai[poz].ok=1;
+        }
+        else {
+            ai[poz].nr-=n;
+            ai[poz].sum-=n*st;
+        }
+    }
+    else{
+
+        fix(poz,st,dr,ai[poz].ok);
+        ai[poz].ok=0;
+
+        int poz1=poz*2, poz2=poz1+1, mid=(st+dr)/2;
+
+        if (ai[poz1].nr >= n) eliminate(poz1,st,mid,n);
+        else {eliminate(poz2,mid+1,dr,n-ai[poz1].nr);eliminate(poz1,st,mid,ai[poz1].nr);}
+
+        ai[poz].nr=ai[poz1].nr+ai[poz2].nr;
+        ai[poz].sum=ai[poz1].sum+ai[poz2].sum;
+    }
+}
+
+bool query(int n, int t){
+    
+    if (ai[1].nr < n) {return 0;}
+    else {
+        if (findsum(1,1,N,n)>t)  return 0;
+        else eliminate(1,1,N,n);
+    }
+    
+    return 1;
+}
+
+void solve(void){
+
+    int i; char c[10]; int n,t;
+    for(i=1; i<=q; i++){
+
+        fscanf(f,"%s%d%d",c,&n,&t);
+        
+        if (c[0] == 'A') updateadd(1,1,N,n,t);
+        else if (query(n,t)) fprintf(g,"HAPPY\n");
+            else fprintf(g,"UNHAPPY\n");
+    
+    }
+}
+
+int main(void){
+
+    read();
+    solve();
+    return 0;
+}
